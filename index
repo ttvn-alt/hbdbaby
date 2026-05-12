@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday My Baby!</title>
+    <style>
+        :root {
+            --primary-purple: #7B2CBF;
+            --light-purple: #9D4EDD;
+            --bg-purple: #F3E5F5;
+            --accent-yellow: #FFD166;
+            --bright-yellow: #FFB703;
+            --dark-text: #240046;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-purple);
+            color: var(--dark-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Permission Overlay */
+        #permission-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(36, 0, 70, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .permission-card {
+            background: white;
+            color: var(--dark-text);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 100%;
+            border: 4px solid var(--accent-yellow);
+        }
+
+        .permission-card h2 {
+            margin-bottom: 15px;
+            color: var(--primary-purple);
+        }
+
+        .permission-card p {
+            margin-bottom: 25px;
+            line-height: 1.5;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            background-color: var(--primary-purple);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
+
+        .btn:hover {
+            background-color: var(--light-purple);
+            transform: translateY(-2px);
+        }
+
+        .https-warning {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #d90429;
+            font-weight: bold;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            z-index: 2;
+        }
+
+        /* Audio Visualizer / Instruction Box */
+        .status-box {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 8px 20px rgba(123, 44, 191, 0.15);
+            margin-bottom: 30px;
+            font-weight: bold;
+            border: 2px solid var(--light-purple);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .mic-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: #ff4d6d;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        /* Cake & Shiba Styling */
+        .cake-stage {
+            position: relative;
+            width: 320px;
+            height: 380px;
+            margin-bottom: 40px;
+        }
+
+        .shiba-cartoon {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            z-index: 1;
+        }
+
+        .cake-cartoon {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            z-index: 2;
+        }
+
+        /* Candle & Flame */
+        .candle-container {
+            position: absolute;
+            bottom: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            width: 20px;
+            height: 70px;
+        }
+
+        .candle-stick {
+            width: 12px;
+            height: 45px;
+            background: linear-gradient(to right, #ffb703, #ffd166, #ffb703);
+            margin: 0 auto;
+            border-radius: 3px;
+        }
+
+        .flame {
+            width: 16px;
+            height: 26px;
+            background: linear-gradient(to bottom, #ff007f, #ffb703, #ffd166);
+            border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+            margin: 0 auto;
+            animation: flicker 0.1s infinite alternate;
+            transform-origin: center bottom;
+            box-shadow: 0 0 20px rgba(255, 183, 3, 0.8);
+        }
+
+        /* Dynamic Flame States controlled by JS */
+        .flame.flicker-hard {
+            animation: flicker-hard-anim 0.05s infinite alternate;
+            transform: scale(0.8) skewX(10deg);
+            opacity: 0.8;
+        }
+
+        .flame.blown-out {
+            display: none;
+        }
+
+        /* Smoke effect after blowing out */
+        .smoke {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 20px;
+            background: rgba(220, 220, 220, 0.7);
+            border-radius: 50%;
+            filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .smoke.active {
+            animation: smoke-rise 2s ease-out forwards;
+        }
+
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-1deg); }
+            100% { transform: scale(1.05) rotate(1deg); }
+        }
+
+        @keyframes flicker-hard-anim {
+            0% { transform: scale(0.9, 0.6) rotate(-8deg) translateX(-2px); }
+            100% { transform: scale(0.7, 0.5) rotate(8deg) translateX(2px); }
+        }
+
+        @keyframes smoke-rise {
+            0% { top: -5px; opacity: 0.8; transform: translateX(-50%) scale(1); filter: blur(1px); }
+            50% { top: -30px; opacity: 0.4; transform: translateX(-30%) scale(2); filter: blur(3px); }
+            100% { top: -60px; opacity: 0; transform: translateX(-60%) scale(3); filter: blur(5px); }
+        }
+
+        /* Cats Container & Positioning around the cake */
+        .cats-group {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .cat {
+            position: absolute;
+            width: 85px;
+            height: auto;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Reveal cats after blowing candle */
+        .revealed .cat {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Specific positions for the 5 cats around the cake */
+        .cat-1 { bottom: 0px; left: -60px; transition-delay: 0.2s; }  /* Tuxedo */
+        .cat-2 { bottom: 120px; left: -90px; transition-delay: 0.4s; } /* Light Cream */
+        .cat-3 { bottom: 0px; right: -60px; transition-delay: 0.6s; } /* Brown Tabby */
+        .cat-4 { bottom: 120px; right: -90px; transition-delay: 0.8s; } /* Orange Tabby */
+        .cat-5 { top: -30px; right: -20px; transition-delay: 1s; }    /* Grey Tabby / Friend */
+
+        /* Birthday Message Styling */
+        .hbd-message {
+            margin-top: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease;
+        }
+
+        .hbd-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hbd-text {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary-purple);
+            text-shadow: -3px -3px 0 var(--accent-yellow), 
+                          3px -3px 0 var(--accent-yellow), 
+                         -3px  3px 0 var(--accent-yellow), 
+                          3px  3px 0 var(--accent-yellow),
+                          0px  5px 10px rgba(0,0,0,0.15);
+            letter-spacing: 2px;
+            animation: bounce 2s infinite;
+        }
+
+        .sub-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--light-purple);
+            margin-top: 10px;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Responsive scaling */
+        @media (max-width: 500px) {
+            .cake-stage {
+                transform: scale(0.85);
+                margin-bottom: 10px;
+            }
+            .hbd-text {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="permission-overlay">
+        <div class="permission-card">
+            <h2>🎤 Microphone Access Required</h2>
+            <p>To blow out the birthday candles, this website needs to use your microphone to detect your breath sound.</p>
+            <button class="btn" id="start-btn">Grant Permission & Start</button>
+            <p class="https-warning">Note: Microphone features work strictly via HTTPS or localhost environments.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="status-box" id="status-box">
+            <div class="mic-indicator"></div>
+            <span id="status-text">Waiting for microphone activation...</span>
+        </div>
+
+        <div class="cake-stage" id="cake-stage">
+            
+            <div class="shiba-cartoon">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <polygon points="25,40 15,15 40,30" fill="#E69138" stroke="#240046" stroke-width="2.5" stroke-linejoin="round"/>
+                    <polygon points="28,37 20,20 38,30" fill="#FFF" />
+                    <polygon points="75,40 85,15 60,30" fill="#E69138" stroke="#240046" stroke-width="2.5" stroke-linejoin="round"/>
+                    <polygon points="72,37 80,20 62,30" fill="#FFF" />
+                    <ellipse cx="50" cy="55" rx="38" ry="28" fill="#E69138" stroke="#240046" stroke-width="2.5"/>
+                    <ellipse cx="32" cy="62" rx="16" ry="16" fill="#FFF"/>
+                    <ellipse cx="68" cy="62" rx="16" ry="16" fill="#FFF"/>
+                    <ellipse cx="50" cy="64" rx="14" ry="12" fill="#FFF"/>
+                    <path d="M 28 52 Q 35 46 40 54" fill="none" stroke="#240046" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M 72 52 Q 65 46 60 54" fill="none" stroke="#240046" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="36" cy="42" r="4" fill="#FFF"/>
+                    <circle cx="64" cy="42" r="4" fill="#FFF"/>
+                    <polygon points="46,58 54,58 50,62" fill="#240046" stroke="#240046" stroke-width="1" stroke-linejoin="round"/>
+                    <path d="M 44 64 Q 50 68 50 64 Q 50 68 56 64" fill="none" stroke="#240046" stroke-width="2.5" stroke-linecap="round"/>
+                    <ellipse cx="22" cy="60" rx="6" ry="4" fill="#FF8FA3" opacity="0.7"/>
+                    <ellipse cx="78" cy="60" rx="6" ry="4" fill="#FF8FA3" opacity="0.7"/>
+                    <circle cx="38" cy="82" r="8" fill="#FFF" stroke="#240046" stroke-width="2"/>
+                    <circle cx="62" cy="82" r="8" fill="#FFF" stroke="#240046" stroke-width="2"/>
+                </svg>
+            </div>
+
+            <div class="candle-container">
+                <div class="flame" id="candle-flame"></div>
+                <div class="smoke" id="candle-smoke"></div>
+                <div class="candle-stick"></div>
+            </div>
+
+            <div class="cake-cartoon">
+                <svg viewBox="0 0 200 160" width="100%" height="100%">
+                    <rect x="15" y="75" width="170" height="75" rx="15" fill="#FFD166" stroke="#240046" stroke-width="3"/>
+                    
+                    <path d="M 15 110 Q 30 125 45 110 Q 60 125 75 110 Q 90 125 105 110 Q 120 125 135 110 Q 150 125 165 110 Q 180 125 185 110 L 185 75 L 15 75 Z" fill="#9D4EDD" stroke="#240046" stroke-width="3" stroke-linejoin="round"/>
+                    
+                    <rect x="35" y="25" width="130" height="55" rx="10" fill="#7B2CBF" stroke="#240046" stroke-width="3"/>
+                    <path d="M 35 45 Q 45 55 55 45 Q 65 55 75 45 Q 85 55 95 45 Q 105 55 115 45 Q 125 55 135 45 Q 145 55 155 45 Q 165 55 165 45 L 165 25 L 35 25 Z" fill="#FFB703" stroke="#240046" stroke-width="3" stroke-linejoin="round"/>
+                    
+                    <circle cx="50" cy="35" r="3" fill="#FFF"/>
+                    <circle cx="120" cy="35" r="3" fill="#FFD166"/>
+                    <circle cx="85" cy="40" r="3" fill="#E69138"/>
+                    <circle cx="150" cy="38" r="3" fill="#FFF"/>
+                    <circle cx="60" cy="90" r="4" fill="#7B2CBF"/>
+                    <circle cx="100" cy="95" r="4" fill="#FFF"/>
+                    <circle cx="140" cy="90" r="4" fill="#9D4EDD"/>
+                </svg>
+            </div>
+
+            <div class="cats-group" id="cats-group">
+                <div class="cat cat-1">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="35" ry="30" fill="#2B2B2B" stroke="#240046" stroke-width="2"/>
+                        <path d="M 25 70 C 30 50, 42 48, 50 60 C 58 48, 70 50, 75 70 C 70 83, 30 83, 25 70 Z" fill="#FFF"/>
+                        <polygon points="20,32 12,5 35,26" fill="#2B2B2B" stroke="#240046" stroke-width="2"/>
+                        <polygon points="80,32 88,5 65,26" fill="#2B2B2B" stroke="#240046" stroke-width="2"/>
+                        <ellipse cx="36" cy="46" rx="7" ry="6" fill="#D4D700" stroke="#240046" stroke-width="1.5"/>
+                        <circle cx="36" cy="46" r="3" fill="#000"/>
+                        <ellipse cx="64" cy="46" rx="7" ry="6" fill="#D4D700" stroke="#240046" stroke-width="1.5"/>
+                        <circle cx="64" cy="46" r="3" fill="#000"/>
+                        <polygon points="47,56 53,56 50,60" fill="#FFB3C1"/>
+                        <line x1="22" y1="58" x2="5" y2="56" stroke="#FFF" stroke-width="1.5"/>
+                        <line x1="22" y1="64" x2="3" y2="66" stroke="#FFF" stroke-width="1.5"/>
+                        <line x1="78" y1="58" x2="95" y2="56" stroke="#FFF" stroke-width="1.5"/>
+                        <line x1="78" y1="64" x2="97" y2="66" stroke="#FFF" stroke-width="1.5"/>
+                        <rect x="35" y="78" width="30" height="6" rx="3" fill="#7B2CBF"/>
+                        <circle cx="50" cy="86" r="5" fill="#FFD166" stroke="#240046" stroke-width="1"/>
+                    </svg>
+                </div>
+
+                <div class="cat cat-2">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="35" ry="30" fill="#FAD2E1" stroke="#240046" stroke-width="2"/>
+                        <polygon points="20,32 10,8 32,25" fill="#FAD2E1" stroke="#240046" stroke-width="2"/>
+                        <polygon points="80,32 90,8 68,25" fill="#FAD2E1" stroke="#240046" stroke-width="2"/>
+                        <circle cx="35" cy="48" r="6" fill="#4A3020"/>
+                        <circle cx="35" cy="46" r="2" fill="#FFF"/>
+                        <circle cx="65" cy="48" r="6" fill="#4A3020"/>
+                        <circle cx="65" cy="46" r="2" fill="#FFF"/>
+                        <ellipse cx="45" cy="60" rx="6" ry="5" fill="#FFF"/>
+                        <ellipse cx="55" cy="60" rx="6" ry="5" fill="#FFF"/>
+                        <polygon points="48,57 52,57 50,60" fill="#E8A598"/>
+                        <rect x="36" y="78" width="28" height="5" rx="2" fill="#900C3F"/>
+                    </svg>
+                </div>
+
+                <div class="cat cat-3">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="35" ry="30" fill="#9A7B56" stroke="#240046" stroke-width="2"/>
+                        <path d="M 42 26 L 44 38 M 50 25 L 50 35 M 58 26 L 56 38" stroke="#4A3020" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M 17 50 L 30 52 M 17 58 L 28 58" stroke="#4A3020" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M 83 50 L 70 52 M 83 58 L 72 58" stroke="#4A3020" stroke-width="3" stroke-linecap="round"/>
+                        <polygon points="20,32 12,6 34,26" fill="#9A7B56" stroke="#240046" stroke-width="2"/>
+                        <polygon points="80,32 88,6 66,26" fill="#9A7B56" stroke="#240046" stroke-width="2"/>
+                        <ellipse cx="34" cy="48" rx="7" ry="6" fill="#C5A059" stroke="#240046"/>
+                        <circle cx="34" cy="48" r="3" fill="#000"/>
+                        <ellipse cx="66" cy="48" rx="7" ry="6" fill="#C5A059" stroke="#240046"/>
+                        <circle cx="66" cy="48" r="3" fill="#000"/>
+                        <polygon points="48,58 52,58 50,61" fill="#4A3020"/>
+                        <path d="M 45 64 Q 50 67 55 64" fill="none" stroke="#240046" stroke-width="1.5"/>
+                        <rect x="34" y="78" width="32" height="6" rx="2" fill="#0077B6"/>
+                        <circle cx="50" cy="85" r="5" fill="#00B4D8" stroke="#240046" stroke-width="1"/>
+                    </svg>
+                </div>
+
+                <div class="cat cat-4">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="35" ry="30" fill="#E67E22" stroke="#240046" stroke-width="2"/>
+                        <path d="M 45 25 L 45 35 M 55 25 L 55 35" stroke="#D35400" stroke-width="3"/>
+                        <path d="M 16 52 L 28 54 M 84 52 L 72 54" stroke="#D35400" stroke-width="3"/>
+                        <polygon points="18,34 8,8 32,27" fill="#E67E22" stroke="#240046" stroke-width="2"/>
+                        <polygon points="82,34 92,8 68,27" fill="#E67E22" stroke="#240046" stroke-width="2"/>
+                        <path d="M 28 50 Q 34 44 38 52" fill="none" stroke="#240046" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 72 50 Q 66 44 62 52" fill="none" stroke="#240046" stroke-width="2.5" stroke-linecap="round"/>
+                        <ellipse cx="50" cy="62" rx="10" ry="8" fill="#FFF"/>
+                        <path d="M 46 62 Q 50 72 54 62 Z" fill="#FF4D6D"/>
+                        <polygon points="48,56 52,56 50,59" fill="#D35400"/>
+                        <rect x="35" y="79" width="30" height="5" rx="2" fill="#1D3557"/>
+                    </svg>
+                </div>
+
+                <div class="cat cat-5">
+                    <svg viewBox="0 0 100 100">
+                        <ellipse cx="50" cy="55" rx="35" ry="30" fill="#BDC3C7" stroke="#240046" stroke-width="2"/>
+                        <path d="M 45 25 L 45 35 M 55 25 L 55 35" stroke="#7F8C8D" stroke-width="3"/>
+                        <path d="M 16 55 L 28 55 M 84 55 L 72 55" stroke="#7F8C8D" stroke-width="3"/>
+                        <polygon points="18,34 8,8 32,27" fill="#BDC3C7" stroke="#240046" stroke-width="2"/>
+                        <polygon points="82,34 92,8 68,27" fill="#BDC3C7" stroke="#240046" stroke-width="2"/>
+                        <circle cx="34" cy="48" r="5" fill="#240046"/>
+                        <path d="M 60 46 Q 66 52 72 46" fill="none" stroke="#240046" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="24" cy="60" r="4" fill="#FF8FA3" opacity="0.6"/>
+                        <circle cx="76" cy="60" r="4" fill="#FF8FA3" opacity="0.6"/>
+                        <polygon points="48,57 52,57 50,60" fill="#7F8C8D"/>
+                        <rect x="35" y="79" width="30" height="5" rx="2" fill="#FFD166"/>
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="hbd-message" id="hbd-message">
+            <h1 class="hbd-text">HAPPY BIRTHDAY, MY BABY!</h1>
+            <p class="sub-text">Wishing you the happiest days with me and our 5 lovely cats! 🐾🎂</p>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const permissionOverlay = document.getElementById('permission-overlay');
+        const statusText = document.getElementById('status-text');
+        const statusBox = document.getElementById('status-box');
+        const candleFlame = document.getElementById('candle-flame');
+        const candleSmoke = document.getElementById('candle-smoke');
+        const cakeStage = document.getElementById('cake-stage');
+        const hbdMessage = document.getElementById('hbd-message');
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let microphone;
+        let isBlownOut = false;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let confettiParticles = [];
+        const colors = ['#7B2CBF', '#9D4EDD', '#FFD166', '#FFB703', '#E69138', '#FFF'];
+
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * -canvas.height;
+                this.size = Math.random() * 8 + 5;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 3 + 2;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 4 - 2;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+                if (this.y > canvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function initConfetti() {
+            for (let i = 0; i < 120; i++) {
+                confettiParticles.push(new Confetti());
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (isBlownOut) {
+                confettiParticles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+            }
+            requestAnimationFrame(animateConfetti);
+        }
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                
+                permissionOverlay.style.opacity = '0';
+                setTimeout(() => permissionOverlay.style.display = 'none', 500);
+                
+                statusText.innerText = "🎤 Mic Active: Blow hard onto the candle screen!";
+                statusBox.style.borderColor = "#FFB703";
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                monitorVolume();
+                
+            } catch (err) {
+                console.error("Microphone access denied or error:", err);
+                statusText.innerText = "❌ Permission denied. Please allow microphone access!";
+                alert("Could not access microphone. Please ensure you allow mic permissions.");
+            }
+        });
+
+        function monitorVolume() {
+            if (isBlownOut) return;
+
+            analyser.getByteFrequencyData(dataArray);
+            
+            let total = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                total += dataArray[i];
+            }
+            let averageVolume = total / dataArray.length;
+            
+            if (averageVolume > 75) {
+                triggerCelebration();
+            } else if (averageVolume > 35) {
+                candleFlame.className = "flame flicker-hard";
+                statusText.innerText = "💨 Blowing... Harder!!";
+            } else {
+                candleFlame.className = "flame";
+                statusText.innerText = "🎤 Blow hard onto the candle to make your wish!";
+            }
+
+            requestAnimationFrame(monitorVolume);
+        }
+
+        function triggerCelebration() {
+            isBlownOut = true;
+            
+            candleFlame.className = "flame blown-out";
+            candleSmoke.className = "smoke active";
+            
+            statusText.innerText = "✨ WISH GRANTED! 🎉";
+            statusBox.style.backgroundColor = "var(--accent-yellow)";
+            statusBox.style.borderColor = "var(--primary-purple)";
+
+            cakeStage.classList.add('revealed');
+            hbdMessage.classList.add('show');
+
+            initConfetti();
+            animateConfetti();
+        }
+    </script>
+</body>
+</html>
